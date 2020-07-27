@@ -10,6 +10,13 @@ const port = process.env.SERVER_PORT;
 const app = express();
 // 3rd-party middleware
 app.use(bodyParser.json()); // - since we want to expect json data on both req and res, we parse it thru json method
+// Handling CORS errors
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 // Using routes
 app.use('/feed', feedRoutes);
 // Listening to port
