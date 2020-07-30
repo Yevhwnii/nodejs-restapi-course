@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const Post = require('../models/post');
+const User = require('../models/user');
 
 // Get all posts
 exports.getPosts = (req, res, next) => {
@@ -75,20 +76,33 @@ exports.postPost = (req, res, next) => {
   const title = req.body.title;
   const content = req.body.content;
   const imageUrl = req.file.path;
+  let creator;
   const updatedImageUrl = imageUrl.replace('\\', '/');
   // Creation of post in db
   const post = new Post({
     title,
     content,
     imageUrl: updatedImageUrl,
-    creator: { name: 'Breiter' },
+    creator: req.userId,
   });
   post
     .save()
     .then((result) => {
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      creator = user;
+      user.posts.push(post);
+      return user.save();
+    })
+    .then((result) => {
       res.status(201).json({
         message: 'Post created successfully',
-        post: result,
+        post,
+        creator: {
+          _id: creator._id,
+          name: creator.name,
+        },
       });
     })
     .catch((err) => {
