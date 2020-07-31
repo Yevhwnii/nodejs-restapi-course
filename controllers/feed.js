@@ -2,8 +2,10 @@ const { validationResult } = require('express-validator');
 const fs = require('fs');
 const path = require('path');
 
+const io = require('../socket');
 const Post = require('../models/post');
 const User = require('../models/user');
+const user = require('../models/user');
 
 // Get all posts
 exports.getPosts = async (req, res, next) => {
@@ -17,6 +19,7 @@ exports.getPosts = async (req, res, next) => {
   try {
     totalItems = await Post.find().countDocuments();
     const posts = await Post.find()
+      .populate('creator')
       .skip((currentPage - 1) * perPage)
       .limit(perPage);
     res.status(200).json({
@@ -92,6 +95,18 @@ exports.postPost = (req, res, next) => {
       return user.save();
     })
     .then((result) => {
+      // emit - sends message to all users
+      // broadcast - sends message to all users but sender
+      // we are sending this js object to all clients connected to the socket
+      // so we can access it on the 'posts' channel and do whatever is needed on the client side
+      // addPost in this case
+      io.getIO().emit('posts', {
+        action: 'create',
+        post: {
+          ...post._doc,
+          creator: { _id: req.userId, name: creator.name },
+        },
+      });
       res.status(201).json({
         message: 'Post created successfully',
         post,
