@@ -61,7 +61,17 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(process.env.MONGO_URI)
   .then((res) => {
-    app.listen(port);
+    // app listen returns a nodejs server
+    const nodeServer = app.listen(port);
+    // we pass server to function exposed by socket io package
+    // it will establish websockets on http
+    const io = require('./socket').init(nodeServer);
+    // and now we create event listeners like this
+    // this function is executed on every new client that connects to server
+    io.on('connection', (socket) => {
+      console.log('Client connected');
+    });
+
     console.log(`Server is running on port - ${port}`);
   })
   .catch((err) => console.log(err));
